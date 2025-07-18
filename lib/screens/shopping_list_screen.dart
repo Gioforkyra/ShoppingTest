@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:smart_shopping/providers/shopping_list_provider.dart';
 
 class ShoppingListScreen extends StatefulWidget {
   const ShoppingListScreen({super.key});
 
   @override
-  State<ShoppingListScreen> createState() => _ShoppingListScreenScreenState();
+  State<ShoppingListScreen> createState() => _ShoppingListScreenState();
 }
 
-class _ShoppingListScreenScreenState extends State<ShoppingListScreen> {
-  final List<StapleItem> _items = [];
-
+class _ShoppingListScreenState extends State<ShoppingListScreen> {
   final TextEditingController _textController = TextEditingController();
 
   void _addItem() {
@@ -36,12 +36,8 @@ class _ShoppingListScreenScreenState extends State<ShoppingListScreen> {
             TextButton(
               onPressed: () {
                 if (_textController.text.isNotEmpty) {
-                  setState(() {
-                    _items.add(StapleItem(
-                      name: _textController.text,
-                      quantity: 1,
-                    ));
-                  });
+                  Provider.of<ShoppingListProvider>(context, listen: false)
+                      .addItem(_textController.text);
                   _textController.clear();
                   Navigator.of(context).pop();
                 }
@@ -52,22 +48,6 @@ class _ShoppingListScreenScreenState extends State<ShoppingListScreen> {
         );
       },
     );
-  }
-
-  void _incrementQuantity(int index) {
-    setState(() {
-      _items[index].quantity++;
-    });
-  }
-
-  void _decrementQuantity(int index) {
-    setState(() {
-      if (_items[index].quantity > 1) {
-        _items[index].quantity--;
-      } else {
-        _items.removeAt(index);
-      }
-    });
   }
 
   @override
@@ -86,7 +66,6 @@ class _ShoppingListScreenScreenState extends State<ShoppingListScreen> {
             fontWeight: FontWeight.w400,
           ),
         ),
-        
       ),
       body: Column(
         children: [
@@ -117,79 +96,95 @@ class _ShoppingListScreenScreenState extends State<ShoppingListScreen> {
             ),
           ),
           
-
-          
           // Items List
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _items.length,
-              itemBuilder: (context, index) {
-                final item = _items[index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2A2A2A),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w300,
-                          ),
-                        ),
+            child: Consumer<ShoppingListProvider>(
+              builder: (context, shoppingListProvider, child) {
+                if (shoppingListProvider.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'Nessun prodotto nella lista\nTocca "Aggiungi" per iniziare',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w300,
                       ),
-                      Row(
+                    ),
+                  );
+                }
+                
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: shoppingListProvider.itemCount,
+                  itemBuilder: (context, index) {
+                    final item = shoppingListProvider.items[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2A2A2A),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            item.quantity.toString(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w300,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2A2A2A),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: IconButton(
-                              onPressed: () => _incrementQuantity(index),
-                              icon: const Icon(Icons.add_circle_outline, color: Color.fromARGB(255, 58, 164, 119), size: 26),
-                              constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
+                          Expanded(
+                            child: Text(
+                              item.name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w300,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2A2A2A),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: IconButton(
-                              onPressed: () => _decrementQuantity(index),
-                              icon: const Icon(Icons.remove_circle_outline, color: Color.fromARGB(255, 128, 126, 126), size: 26),
-                              constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
+                          Row(
+                            children: [
+                              Text(
+                                item.quantity.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w300,
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 16),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2A2A2A),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: IconButton(
+                                  onPressed: () => shoppingListProvider.incrementQuantity(index),
+                                  icon: const Icon(Icons.add_circle_outline, color: Color.fromARGB(255, 58, 164, 119), size: 26),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 32,
+                                    minHeight: 32,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2A2A2A),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: IconButton(
+                                  onPressed: () => shoppingListProvider.decrementQuantity(index),
+                                  icon: const Icon(Icons.remove_circle_outline, color: Color.fromARGB(255, 128, 126, 126), size: 26),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 32,
+                                    minHeight: 32,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
             ),
@@ -203,32 +198,5 @@ class _ShoppingListScreenScreenState extends State<ShoppingListScreen> {
   void dispose() {
     _textController.dispose();
     super.dispose();
-  }
-}
-
-class StapleItem {
-  String name;
-  int quantity;
-
-  StapleItem({required this.name, required this.quantity});
-}
-
-// Esempio di utilizzo in main.dart
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Shopping List',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const ShoppingListScreen(),
-    );
   }
 }
